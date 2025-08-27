@@ -38,7 +38,7 @@ class Shoe(BaseModel):
     width: Mapped[list[str]] = mapped_column(JSON, nullable=True, default=[])
     price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     images: Mapped[list[str]] = mapped_column(JSON, nullable=True, default=[])
-    description: Mapped[str] = mapped_column(String(2000), nullable=False)
+    description: Mapped[str] = mapped_column(String(2000), nullable=True, default=[])
     highlights: Mapped[list[str]] = mapped_column(JSON, nullable=True, default=[])
     type: Mapped[str] = mapped_column(String(10), nullable=False)
     category: Mapped[str] = mapped_column(String(255), nullable=False)
