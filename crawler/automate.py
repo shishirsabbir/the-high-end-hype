@@ -26,7 +26,7 @@ async def save_product(product_data):
             shoe = Shoe(**product_data)
             session.add(shoe)
             session.commit()
-            print(f"Saved product: {shoe.title}")
+            print(f"[DB LOG] New entry stored: {shoe.title} | ID: {shoe.id}")
         except Exception as e:
             session.rollback()
             print(f"Error saving product: {e}")
@@ -46,6 +46,7 @@ async def main():
     total_urls = len(urls)
     print(f"🟢 Loaded {total_urls} URLs to scrape.")
 
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False)
         context = await browser.new_context(
@@ -60,43 +61,16 @@ async def main():
         await context.grant_permissions([], origin="https://www.shoecarnival.com/")
         page = await context.new_page()
 
-        # First test with parseProductTest
-        print("🔍 Starting navigation phase...")
-        for idx, url in enumerate(urls, 1):
-            print(f"� [{idx}/{total_urls}] Navigating: {url}")
-            try:
-                await page.goto(url)
-                product_data = await parseProduct(page)
-                # Check for missing data
-                missing = [
-                    k
-                    for k, v in product_data.items()
-                    if v is None or (isinstance(v, list) and not v)
-                ]
-                if missing:
-                    print(f"⚠️ Missing data for {url}: {missing}")
-                    print("⛔ Breaking loop due to missing data.")
-                    break
-                print(f"✅ Store Product Data: {product_data.get('title', 'Unknown Title')}")
-            except Exception as e:
-                print(f"❌ Error during navigation for {url}: {e}")
-                print("⛔ Breaking loop due to error.")
-                break
-            await page.wait_for_timeout(500)
-
-        # Main parsing: collect error URLs and never break the loop
-        print("🚀 Starting main parsing...")
+        print("� Starting scraping...")
         error_urls = []
         bar_length = 30
-        for idx, url in enumerate(urls, 1):
-            # Loading bar
+        for idx, url in enumerate(urls[:5], 1):
             progress = int(bar_length * idx / total_urls)
             bar = "█" * progress + "-" * (bar_length - progress)
             print(f"🟦 [{idx}/{total_urls}] |{bar}| Scraping: {url}")
             try:
                 await page.goto(url)
                 product_data = await parseProduct(page)
-                # Check for missing data
                 missing = [
                     k
                     for k, v in product_data.items()
@@ -108,12 +82,12 @@ async def main():
                     print(f"⚠️ Missing data for {url}: {missing}")
                     error_urls.append({"url": url, "missing": missing})
                 else:
-                    print(f"✅ Data saved for: {url}")
+                    print(f"✅ Data parsed for: {url}")
                 await save_product(product_data)
             except Exception as e:
-                print(f"❌ Error during parsing for {url}: {e}")
+                print(f"❌ Error during scraping for {url}: {e}")
                 error_urls.append({"url": url, "error": str(e)})
-            await page.wait_for_timeout(500)
+            await page.wait_for_timeout(0.5 * 1000)  # 0.5 seconds for faster iteration
 
         # Export error URLs to output/error_urls_men.json
         if error_urls:
@@ -125,7 +99,7 @@ async def main():
             )
         print("🎉 Scraping complete!")
 
-        await browser.close()
+    # ...existing code...
 
 
 if __name__ == "__main__":
